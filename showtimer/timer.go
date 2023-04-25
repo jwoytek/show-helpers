@@ -4,27 +4,37 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"time"
 )
 
 const (
-	CountUp   = iota
-	CountDown = iota
+	TimerCountUp   = iota
+	TimerCountDown = iota
 )
 
-func MakeTimer(timerType int) (t *Timer, err error) {
-	if timerType < CountUp || timerType > CountDown {
-		err = errors.New("Timer type not one of 'CountUp' or 'CountDown'")
-	}
-	return &Timer{timerType: timerType}, nil
+type Timer struct {
+	Name            string
+	timerType       int
+	totalSecs       float64
+	initialDuration time.Duration
+	set             bool
+	running         bool
+	timerStop       chan bool
 }
 
-type Timer struct {
-	timerType int
-	totalSecs float64
-	set       bool
-	running   bool
-	timerStop chan bool
+func NewTimer(timerType int, name string, initialDuration time.Duration) (t *Timer, err error) {
+	if timerType < TimerCountUp || timerType > TimerCountDown {
+		err = errors.New("Timer type not one of 'TimerCountUp' or 'TimerCountDown'")
+	}
+	log.Printf("Creating new timer '%s' with initial duration of %fs", name, initialDuration.Seconds())
+	t = new(Timer)
+	t.timerType = timerType
+	t.Name = name
+	t.initialDuration = initialDuration
+	t.totalSecs = initialDuration.Seconds()
+
+	return t, nil
 }
 
 func (t *Timer) update(duration time.Duration) {
@@ -46,6 +56,7 @@ func (t *Timer) Start() {
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
 		start := time.Now()
+		end := start.Add(time.Duration(t.initialDuration))
 		for {
 			select {
 			case <-t.timerStop:
@@ -53,12 +64,12 @@ func (t *Timer) Start() {
 				return
 			case tick := <-ticker.C:
 				switch t.timerType {
-				case CountUp:
+				case TimerCountUp:
 					t.update(tick.Sub(start))
-					log.Println("Elapsed:", t.HMS())
-				case CountDown:
-					t.update(start.Sub(tick))
-					log.Println("Remaining:", t.HMS())
+					//log.Println("Elapsed:", t.HMS())
+				case TimerCountDown:
+					t.update(end.Sub(tick))
+					//log.Println("Remaining:", t.HMS())
 				}
 			}
 		}
@@ -76,15 +87,22 @@ func (t *Timer) Stop() {
 func (t *Timer) Reset() {
 	t.Stop()
 	t.set = false
-	t.totalSecs = 0
+	t.totalSecs = t.initialDuration.Seconds()
 }
 
 func (t Timer) HMS() string {
 	if !t.set {
 		return fmt.Sprint("--:--:--")
 	}
-	hours := int(t.totalSecs/(60*60)) % 24
-	minutes := int(t.totalSecs/60) % 60
-	seconds := int(t.totalSecs) % 60
-	return fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
+	log.Printf("totalSecs = %f", t.totalSecs)
+	secs := t.totalSecs
+	prefix := ""
+	if t.totalSecs < 0 {
+		secs = math.Abs(t.totalSecs)
+		prefix = "- "
+	}
+	hours := int(secs/(60*60)) % 24
+	minutes := int(secs/60) % 60
+	seconds := int(secs) % 60
+	return fmt.Sprintf("%s%02d:%02d:%02d", prefix, hours, minutes, seconds)
 }
