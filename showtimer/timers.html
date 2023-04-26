@@ -1,7 +1,9 @@
 <html>
     <head><title>Timers</title></head>
     <body style="background-color: #222222; color: #ffffff">
-        <h1>Act 1</h1>
-        <p>{{.}}</p>
+        {{range .}}
+        <h1>{{.Name}}</h1>
+        <p>{{.HMS}}</p>
+        {{end}}
     </body>
 </html>

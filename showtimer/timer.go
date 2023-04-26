@@ -32,14 +32,20 @@ func NewTimer(timerType int, name string, initialDuration time.Duration) (t *Tim
 	t.timerType = timerType
 	t.Name = name
 	t.initialDuration = initialDuration
-	t.totalSecs = initialDuration.Seconds()
+	if timerType == TimerCountDown {
+		t.totalSecs = initialDuration.Seconds()
+		t.set = true
+	} else {
+		t.totalSecs = 0
+	}
 
 	return t, nil
 }
 
 func (t *Timer) update(duration time.Duration) {
+	//log.Printf("%s updated from %f to %f", t.Name, t.totalSecs, duration.Seconds())
 	t.set = true
-	t.totalSecs = duration.Seconds()
+	t.totalSecs = math.Round(duration.Seconds())
 	//e.hours = int(e.totalSecs/(60*60)) % 24
 	//e.minutes = int(e.totalSecs/60) % 60
 	//e.seconds = int(e.totalSecs) % 60
@@ -51,7 +57,7 @@ func (t *Timer) Start() {
 	}
 
 	go func() {
-		log.Println("timer started")
+		log.Printf("%s timer started", t.Name)
 		t.running = true
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
@@ -60,16 +66,16 @@ func (t *Timer) Start() {
 		for {
 			select {
 			case <-t.timerStop:
-				log.Println("timer told to stop")
+				log.Printf("%s told to stop", t.Name)
 				return
 			case tick := <-ticker.C:
 				switch t.timerType {
 				case TimerCountUp:
 					t.update(tick.Sub(start))
-					//log.Println("Elapsed:", t.HMS())
+					log.Printf("%s elapsed: %s", t.Name, t.HMS())
 				case TimerCountDown:
 					t.update(end.Sub(tick))
-					//log.Println("Remaining:", t.HMS())
+					log.Printf("%s remaining: %s", t.Name, t.HMS())
 				}
 			}
 		}
@@ -94,7 +100,7 @@ func (t Timer) HMS() string {
 	if !t.set {
 		return fmt.Sprint("--:--:--")
 	}
-	log.Printf("totalSecs = %f", t.totalSecs)
+	//log.Printf("totalSecs = %f", t.totalSecs)
 	secs := t.totalSecs
 	prefix := ""
 	if t.totalSecs < 0 {
@@ -105,4 +111,11 @@ func (t Timer) HMS() string {
 	minutes := int(secs/60) % 60
 	seconds := int(secs) % 60
 	return fmt.Sprintf("%s%02d:%02d:%02d", prefix, hours, minutes, seconds)
+}
+
+func (t Timer) Over() bool {
+	if t.totalSecs < 0 {
+		return true
+	}
+	return false
 }
