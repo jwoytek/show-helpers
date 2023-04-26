@@ -1,14 +1,22 @@
 package main
 
 import (
-	"fmt"
+	"encoding/json"
 	"html/template"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
 var Timers map[string]*Timer
+
+type TimerValue struct {
+	HMS     string `json:"hms"`
+	Seconds int    `json:"seconds"`
+	Over    bool   `json:"over,omitempty"`
+	Type    int    `json:"type"`
+}
 
 func webHandler(w http.ResponseWriter, r *http.Request) {
 	t, err := template.ParseFiles("timers.html")
@@ -23,25 +31,34 @@ func webHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func timerValueHandler(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query()
-	name, present := query["name"]
-	if !present || len(name) == 0 {
-		log.Println("timer name not present")
+	//query := r.URL.Query()
+	//log.Println(r.URL.Path)
+	w.Header().Set("Content-Type", "application/json")
+	out := json.NewEncoder(w)
+	path := strings.SplitN(r.URL.Path[1:], "/", -1)
+	//log.Println(path)
+
+	if len(path) != 2 {
+		log.Println("invalid path in timerValueHandler")
 		http.Error(w, "invalid parameters; name not specified", http.StatusBadRequest)
 		return
 	}
-	if present && len(name) != 1 {
-		log.Println("timer name specified more than once")
-		http.Error(w, "invalid parameters; name can only be specified once", http.StatusBadRequest)
-		return
-	}
-	t, ok := Timers[name[0]]
+	t, ok := Timers[path[1]]
 	if !ok {
 		log.Println("timer name not found")
 		http.Error(w, "timer name not found", http.StatusNotFound)
 		return
 	}
-	fmt.Fprintf(w, t.HMS())
+	var tv TimerValue
+	tv.HMS = t.HMS()
+	tv.Seconds = t.Seconds()
+	tv.Over = t.Over()
+	tv.Type = t.Type()
+	err := out.Encode(tv)
+	if err != nil {
+		log.Fatalf("Unable to encode response: %s", err)
+		http.Error(w, "Unable to encode response", http.StatusInternalServerError)
+	}
 }
 
 func main() {
@@ -77,6 +94,8 @@ func main() {
 		}()
 	*/
 
+	staticServer := http.FileServer(http.Dir("./static"))
+	http.Handle("/static/", http.StripPrefix("/static/", staticServer))
 	http.HandleFunc("/timer/", timerValueHandler)
 	http.HandleFunc("/", webHandler)
 	log.Fatal(http.ListenAndServe(":8080", nil))

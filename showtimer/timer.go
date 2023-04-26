@@ -103,9 +103,18 @@ func (t Timer) HMS() string {
 	//log.Printf("totalSecs = %f", t.totalSecs)
 	secs := t.totalSecs
 	prefix := ""
-	if t.totalSecs < 0 {
-		secs = math.Abs(t.totalSecs)
-		prefix = "- "
+	if t.timerType == TimerCountDown {
+		if t.totalSecs < 0 {
+			secs = math.Abs(t.totalSecs)
+			prefix = "+ "
+		} else {
+			prefix = "- "
+		}
+	} else {
+		if t.totalSecs < 0 {
+			secs = math.Abs(t.totalSecs)
+			prefix = "- "
+		}
 	}
 	hours := int(secs/(60*60)) % 24
 	minutes := int(secs/60) % 60
@@ -113,9 +122,17 @@ func (t Timer) HMS() string {
 	return fmt.Sprintf("%s%02d:%02d:%02d", prefix, hours, minutes, seconds)
 }
 
+func (t Timer) Seconds() int {
+	return int(t.totalSecs)
+}
+
 func (t Timer) Over() bool {
 	if t.totalSecs < 0 {
 		return true
 	}
 	return false
+}
+
+func (t Timer) Type() int {
+	return t.timerType
 }

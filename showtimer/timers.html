@@ -1,9 +1,47 @@
-<html>
-    <head><title>Timers</title></head>
-    <body style="background-color: #222222; color: #ffffff">
-        {{range .}}
-        <h1>{{.Name}}</h1>
-        <p>{{.HMS}}</p>
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Timers</title>
+        <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+        <meta name="theme-color" content="#712cf9">
+    </head>
+    <body>
+        {{range $key, $element := .}}
+        <div class="container my-5">
+            <div class="p-5 text-center bg-body-tertiary">
+                <h1 class="text-body-emphasis">{{$element.Name}}</h1>
+                <p class="lead" id="{{$key}}_hms">{{$element.HMS}}</p>
+            </div>
+        </div>
+        <script type="text/javascript">
+            updateInterval = setInterval(()=>{
+                fetchTimer("{{$key}}", "{{$key}}_hms")
+            }, 1000)
+        </script>
         {{end}}
+        <script src="/static/js/bootstrap.bundle.min.js"></script>
+        <script type="text/javascript">
+
+            fetchTimer = (name, elementId) => {
+                let url = `/timer/${name}`;
+                const controller = new AbortController()
+                const timeoutId = setTimeout(() => controller.abort(), 3000)
+                controller.signal.addEventListener("abort", () => {
+                    console.log("abort")
+                    clearInterval(updateInterval)
+                })
+                fetch(url, {method: 'get', signal: controller.signal}).then(resp => resp.json()).then( data => {
+                    if(data.over) {
+                        document.getElementById(elementId).classList.add("text-danger")
+                    } else {
+                        document.getElementById(elementId).classList.remove("text-danger")
+                    }
+                    document.getElementById(elementId).innerHTML = `${data.hms}`
+                    clearTimeout(timeoutId)
+                });
+            };
+        </script>
     </body>
 </html>
