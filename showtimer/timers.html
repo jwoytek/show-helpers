@@ -8,19 +8,40 @@
         <meta name="theme-color" content="#712cf9">
     </head>
     <body>
+        <script type="text/javascript">
+            let updateIntervals = new Array()
+        </script>
+
+        <div class="container text-center" style="max-width: 720px;">
         {{range $key, $element := .}}
+        <!--
         <div class="container my-5">
             <div class="p-5 text-center bg-body-tertiary">
                 <h1 class="text-body-emphasis">{{$element.Name}}</h1>
                 <p class="lead" id="{{$key}}_hms">{{$element.HMS}}</p>
             </div>
         </div>
+        -->
+            <div class="row my-2 p-1 justify-content-center border border-primary-subtle">
+                <div class="row border-bottom p-1 bg-body-secondary">
+                    <div class="col-8 offset-2">
+                        <span class="fs-4">{{$element.Name}}</span>
+                    </div>
+                    <div class="col-1">
+                        <span class="py-1 px-2 bg-danger border border-light rounded-circle"></span>
+                    </div>
+                </div>
+                <div class="row p-2 bg-body-tertiary">
+                    <span class="display-1 font-monospace" id="{{$key}}_hms">{{$element.HMS}}</span>
+                </div>
+            </div>
         <script type="text/javascript">
-            updateInterval = setInterval(()=>{
+            updateIntervals.push(setInterval(()=>{
                 fetchTimer("{{$key}}", "{{$key}}_hms")
-            }, 1000)
+            }, 1000))
         </script>
         {{end}}
+        </div>
         <script src="/static/js/bootstrap.bundle.min.js"></script>
         <script type="text/javascript">
 
@@ -29,8 +50,8 @@
                 const controller = new AbortController()
                 const timeoutId = setTimeout(() => controller.abort(), 3000)
                 controller.signal.addEventListener("abort", () => {
-                    console.log("abort")
-                    clearInterval(updateInterval)
+                    console.log("timeout -- abort updates")
+                    updateIntervals.forEach((value) => clearInterval(value))
                 })
                 fetch(url, {method: 'get', signal: controller.signal}).then(resp => resp.json()).then( data => {
                     if(data.over) {

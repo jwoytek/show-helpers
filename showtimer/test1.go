@@ -16,6 +16,7 @@ type TimerValue struct {
 	Seconds int    `json:"seconds"`
 	Over    bool   `json:"over,omitempty"`
 	Type    int    `json:"type"`
+	Running bool   `json:"running"`
 }
 
 func webHandler(w http.ResponseWriter, r *http.Request) {
@@ -54,6 +55,7 @@ func timerValueHandler(w http.ResponseWriter, r *http.Request) {
 	tv.Seconds = t.Seconds()
 	tv.Over = t.Over()
 	tv.Type = t.Type()
+	tv.Running = t.Running()
 	err := out.Encode(tv)
 	if err != nil {
 		log.Fatalf("Unable to encode response: %s", err)

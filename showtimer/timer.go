@@ -136,3 +136,7 @@ func (t Timer) Over() bool {
 func (t Timer) Type() int {
 	return t.timerType
 }
+
+func (t Timer) Running() bool {
+	return t.running
+}
