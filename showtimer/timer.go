@@ -26,6 +26,7 @@ type Timer struct {
 func NewTimer(timerType int, name string, initialDuration time.Duration) (t *Timer, err error) {
 	if timerType < TimerCountUp || timerType > TimerCountDown {
 		err = errors.New("Timer type not one of 'TimerCountUp' or 'TimerCountDown'")
+		return nil, err
 	}
 	log.Printf("Creating new timer '%s' with initial duration of %fs", name, initialDuration.Seconds())
 	t = new(Timer)
@@ -66,16 +67,16 @@ func (t *Timer) Start() {
 		for {
 			select {
 			case <-t.timerStop:
-				log.Printf("%s told to stop", t.Name)
+				log.Printf("%s timer stopped", t.Name)
 				return
 			case tick := <-ticker.C:
 				switch t.timerType {
 				case TimerCountUp:
 					t.update(tick.Sub(start))
-					log.Printf("%s elapsed: %s", t.Name, t.HMS())
+					//log.Printf("%s elapsed: %s", t.Name, t.HMS())
 				case TimerCountDown:
 					t.update(end.Sub(tick))
-					log.Printf("%s remaining: %s", t.Name, t.HMS())
+					//log.Printf("%s remaining: %s", t.Name, t.HMS())
 				}
 			}
 		}
@@ -84,7 +85,6 @@ func (t *Timer) Start() {
 
 func (t *Timer) Stop() {
 	if t.running {
-		log.Println("stopping timer")
 		t.timerStop <- true
 		t.running = false
 	}
@@ -92,34 +92,45 @@ func (t *Timer) Stop() {
 
 func (t *Timer) Reset() {
 	t.Stop()
-	t.set = false
+	if t.timerType == TimerCountUp {
+		t.set = false
+	}
 	t.totalSecs = t.initialDuration.Seconds()
 }
 
 func (t Timer) HMS() string {
 	if !t.set {
-		return fmt.Sprint("--:--:--")
+		return "--:--:--"
 	}
 	//log.Printf("totalSecs = %f", t.totalSecs)
 	secs := t.totalSecs
-	prefix := ""
-	if t.timerType == TimerCountDown {
-		if t.totalSecs < 0 {
-			secs = math.Abs(t.totalSecs)
-			prefix = "+ "
-		} else {
-			prefix = "- "
-		}
-	} else {
-		if t.totalSecs < 0 {
-			secs = math.Abs(t.totalSecs)
-			prefix = "- "
-		}
+	if t.totalSecs < 0 {
+		secs = math.Abs(t.totalSecs)
 	}
 	hours := int(secs/(60*60)) % 24
 	minutes := int(secs/60) % 60
 	seconds := int(secs) % 60
-	return fmt.Sprintf("%s%02d:%02d:%02d", prefix, hours, minutes, seconds)
+	return fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
+}
+
+func (t Timer) HMSIndicator() string {
+	indicator := " "
+	if t.timerType == TimerCountDown {
+		if t.totalSecs < 0 {
+			indicator = "+"
+		} else {
+			indicator = "-"
+		}
+	} else {
+		if t.totalSecs < 0 {
+			indicator = "-"
+		}
+	}
+	return indicator
+}
+
+func (t Timer) HMSWithIndicator() string {
+	return fmt.Sprintf("%s %s", t.HMSIndicator(), t.HMS())
 }
 
 func (t Timer) Seconds() int {
@@ -127,10 +138,7 @@ func (t Timer) Seconds() int {
 }
 
 func (t Timer) Over() bool {
-	if t.totalSecs < 0 {
-		return true
-	}
-	return false
+	return t.totalSecs < 0
 }
 
 func (t Timer) Type() int {

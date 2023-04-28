@@ -1,0 +1,6 @@
+timers:
+  - act1: Act 1
+    type: TimerCountUp
+  - intermission: Intermission
+    type: TimerCountDown
+    duration: 1m
