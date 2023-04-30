@@ -13,15 +13,7 @@
         </script>
 
         <div class="container text-center" style="max-width: 720px;">
-        {{range $key, $element := .}}
-        <!--
-        <div class="container my-5">
-            <div class="p-5 text-center bg-body-tertiary">
-                <h1 class="text-body-emphasis">{{$element.Name}}</h1>
-                <p class="lead" id="{{$key}}_hms">{{$element.HMS}}</p>
-            </div>
-        </div>
-        -->
+        {{range $idx, $element := .}}
             <div class="row my-2 p-1 justify-content-center border border-primary-subtle">
                 <div class="row border-bottom p-1 bg-body-secondary">
                     <!-- <div class="col-8 offset-2"> -->
@@ -33,16 +25,16 @@
                 </div>
                 <div class="row p-2 bg-body-tertiary">
                     <div class="col-1">
-                        <span class="display-1 font-monospace" id="{{$key}}_hms_indicator">{{$element.HMSIndicator}}</span>
+                        <span class="display-1 font-monospace" id="{{$element.Key}}_hms_indicator">{{$element.HMSIndicator}}</span>
                     </div>
                     <div class="col-10">
-                        <span class="display-1 font-monospace" id="{{$key}}_hms">{{$element.HMS}}</span>
+                        <span class="display-1 font-monospace" id="{{$element.Key}}_hms">{{$element.HMS}}</span>
                     </div>
                 </div>
             </div>
         <script type="text/javascript">
             updateIntervals.push(setInterval(()=>{
-                fetchTimer("{{$key}}", "{{$key}}_hms", "{{$key}}_hms_indicator")
+                fetchTimer("{{$element.Key}}", "{{$element.Key}}_hms", "{{$element.Key}}_hms_indicator")
             }, 1000))
         </script>
         {{end}}

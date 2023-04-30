@@ -9,12 +9,14 @@ import (
 )
 
 const (
-	TimerCountUp   = iota
-	TimerCountDown = iota
+	CountUp   = iota
+	CountDown = iota
 )
 
 type Timer struct {
 	Name            string
+	Key             string
+	index           int
 	timerType       int
 	totalSecs       float64
 	initialDuration time.Duration
@@ -23,17 +25,19 @@ type Timer struct {
 	timerStop       chan bool
 }
 
-func NewTimer(timerType int, name string, initialDuration time.Duration) (t *Timer, err error) {
-	if timerType < TimerCountUp || timerType > TimerCountDown {
-		err = errors.New("Timer type not one of 'TimerCountUp' or 'TimerCountDown'")
+func NewTimer(timerType int, name string, key string, idx int, initialDuration time.Duration) (t *Timer, err error) {
+	if timerType < CountUp || timerType > CountDown {
+		err = errors.New("Timer type not one of 'CountUp' or 'CountDown'")
 		return nil, err
 	}
 	log.Printf("Creating new timer '%s' with initial duration of %fs", name, initialDuration.Seconds())
 	t = new(Timer)
 	t.timerType = timerType
 	t.Name = name
+	t.index = idx
+	t.Key = key
 	t.initialDuration = initialDuration
-	if timerType == TimerCountDown {
+	if timerType == CountDown {
 		t.totalSecs = initialDuration.Seconds()
 		t.set = true
 	} else {
@@ -71,10 +75,10 @@ func (t *Timer) Start() {
 				return
 			case tick := <-ticker.C:
 				switch t.timerType {
-				case TimerCountUp:
+				case CountUp:
 					t.update(tick.Sub(start))
 					//log.Printf("%s elapsed: %s", t.Name, t.HMS())
-				case TimerCountDown:
+				case CountDown:
 					t.update(end.Sub(tick))
 					//log.Printf("%s remaining: %s", t.Name, t.HMS())
 				}
@@ -92,7 +96,7 @@ func (t *Timer) Stop() {
 
 func (t *Timer) Reset() {
 	t.Stop()
-	if t.timerType == TimerCountUp {
+	if t.timerType == CountUp {
 		t.set = false
 	}
 	t.totalSecs = t.initialDuration.Seconds()
@@ -115,7 +119,7 @@ func (t Timer) HMS() string {
 
 func (t Timer) HMSIndicator() string {
 	indicator := " "
-	if t.timerType == TimerCountDown {
+	if t.timerType == CountDown {
 		if t.totalSecs < 0 {
 			indicator = "+"
 		} else {
